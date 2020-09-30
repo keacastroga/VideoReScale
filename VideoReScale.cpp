@@ -8,7 +8,7 @@ int main(int argc, char** argv )
 {
     if ( argc != 2 )
     {
-        printf("usage: DisplayVideo.out <Video_Path>\n");
+        printf("usage: VideoReScale.out <Video_Path>\n");
         return -1;
     }
     VideoCapture cap(argv[1]);
