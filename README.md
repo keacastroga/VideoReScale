@@ -5,6 +5,6 @@ make
 ```
 ### Correr
 ```
-./DisplayVideo.out "path_to_video.mp4"
+./VideoReScale.out "path_to_video.mp4"
 ```
 
