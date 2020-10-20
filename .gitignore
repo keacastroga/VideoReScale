@@ -12,3 +12,4 @@ include
 skia_compile_arguments.txt
 skia_link_arguments.txt
 Makefile
+.vscode
