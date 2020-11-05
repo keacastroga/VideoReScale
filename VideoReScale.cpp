@@ -12,6 +12,9 @@ using namespace cv;
 
 int rows, cols, channels, rowLen, newRows, newCols, newRowLen, origRow, origCol;
 
+unsigned char *pixel1, *pixel2, *pixel3, *pixel4;
+unsigned char *newPixel;
+
 void sequentialScale(uchar *pixels, uchar *newPixels);
 void openMPScale(uchar *pixels, uchar *newPixels);
 
@@ -34,8 +37,18 @@ int main(int argc, char **argv)
     double factor = stod(argv[2]);
     double fps = cap.get(CAP_PROP_FPS);
     int fourcc = static_cast<int>(cap.get(CAP_PROP_FOURCC));
-    Size S = Size(((int)cap.get(CAP_PROP_FRAME_WIDTH) * factor),
-                  ((int)cap.get(CAP_PROP_FRAME_HEIGHT) * factor));
+
+    rows = (int)cap.get(CAP_PROP_FRAME_HEIGHT);
+    cols = (int)cap.get(CAP_PROP_FRAME_WIDTH);
+    channels = 3;
+    rowLen = channels * cols;
+    newRows = rows * factor;
+    newCols = cols * factor;
+    newRowLen = channels * newCols;
+
+    Size S = Size(newCols,newRows);
+
+    unsigned char *newPixels = (uchar *)malloc(sizeof(uchar) * newCols * channels * newRows);
 
     out.open(argv[3], fourcc, fps, S);
     if (!out.isOpened())
@@ -43,8 +56,6 @@ int main(int argc, char **argv)
         cout << "Could not open the output video for write: " << endl;
         return -1;
     }
-
-    Size s0 = Size();
 
     struct timeval tval_before, tval_after, tval_result;
     gettimeofday(&tval_before, NULL);
@@ -55,25 +66,17 @@ int main(int argc, char **argv)
         if (frame.empty())
             break;
         unsigned char *pixels = frame.data;
-        rows = frame.rows;
-        cols = frame.cols;
-        channels = frame.step[1];
-        rowLen = channels * cols;
-        newRows = rows * factor;
-        newCols = cols * factor;
-        newRowLen = channels * newCols;
-        unsigned char *newPixels = (uchar *)malloc(sizeof(uchar) * newCols * channels * newRows);
         openMPScale(pixels, newPixels);
         //sequentialScale(pixels, newPixels);
         Mat outFrame(newRows, newCols, CV_8UC3, newPixels);
         out << outFrame;
         frame.release();
         outFrame.release();
-        free(newPixels);
     }
     gettimeofday(&tval_after, NULL);
     timersub(&tval_after, &tval_before, &tval_result);
     printf("Time elapsed: %ld.%06ld\n", (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
+    free(newPixels);
     out.release();
     cap.release();
     return 0;
@@ -81,17 +84,16 @@ int main(int argc, char **argv)
 
 void sequentialScale(uchar *pixels, uchar *newPixels)
 {
-    unsigned char *pixel1, *pixel2, *pixel3, *pixel4;
     for (int scaledRow = 0; scaledRow < newRows; scaledRow++)
     {
         origRow = scaledRow * 2 * rowLen;
         for (int scaledCol = 0; scaledCol < newCols; scaledCol++)
         {
-            uchar *pixel1 = pixels + scaledCol * 2 * channels + origRow;
-            uchar *pixel2 = pixel1 + channels;
-            uchar *pixel3 = pixel1 + rowLen;
-            uchar *pixel4 = pixel3 + channels;
-            uchar *newPixel = newPixels + scaledCol * channels + scaledRow * newRowLen;
+            pixel1 = pixels + scaledCol * 2 * channels + origRow;
+            pixel2 = pixel1 + channels;
+            pixel3 = pixel1 + rowLen;
+            pixel4 = pixel3 + channels;
+            newPixel = newPixels + scaledCol * channels + scaledRow * newRowLen;
             *(newPixel) = (*pixel1 + *pixel2 + *pixel3 + *pixel4) / 4;
             *(newPixel + 1) = (*(pixel1 + 1) + *(pixel2 + 1) + *(pixel3 + 1) + *(pixel4 + 1)) / 4;
             *(newPixel + 2) = (*(pixel1 + 2) + *(pixel2 + 2) + *(pixel3 + 2) + *(pixel4 + 2)) / 4;
