@@ -8,11 +8,10 @@
 using namespace std;
 using namespace cv;
 
-int rows, cols, channels, rowLen, newRows, newCols, newRowLen, origCol;
+#define THREADS 8
 
-unsigned char *pixel1, *pixel2, *pixel3, *pixel4, *newPixel;
+int rows, cols, channels, rowLen, newRows, newCols, newRowLen;
 
-void sequentialScale(uchar *pixels, uchar *newPixels);
 void openMPScale(uchar *pixels, uchar *newPixels);
 
 int main(int argc, char **argv)
@@ -58,14 +57,37 @@ int main(int argc, char **argv)
     Mat outFrame(newRows, newCols, CV_8UC3, newPixels);
     struct timeval tval_before, tval_after, tval_result;
     gettimeofday(&tval_before, NULL);
-    while (1)
+#pragma omp parallel num_threads(THREADS)
     {
-        cap >> frame;
-        if (frame.empty())
-            break;
-        sequentialScale(frame.data, newPixels);
-        out << outFrame;
-
+        while (1)
+        {
+#pragma omp single
+            {
+                cap >> frame;
+            }
+            if (frame.empty())
+                break;
+#pragma omp for
+            for (int scaledRow = 0; scaledRow < newRows; scaledRow++)
+            {
+                int origRow = scaledRow * 2 * rowLen;
+                for (int scaledCol = 0; scaledCol < newCols; scaledCol++)
+                {
+                    uchar *pixel1 = frame.data + scaledCol * 2 * channels + origRow;
+                    uchar *pixel2 = pixel1 + channels;
+                    uchar *pixel3 = pixel1 + rowLen;
+                    uchar *pixel4 = pixel3 + channels;
+                    uchar *newPixel = newPixels + scaledCol * channels + scaledRow * newRowLen;
+                    *(newPixel) = (*pixel1 + *pixel2 + *pixel3 + *pixel4) / 4;
+                    *(newPixel + 1) = (*(pixel1 + 1) + *(pixel2 + 1) + *(pixel3 + 1) + *(pixel4 + 1)) / 4;
+                    *(newPixel + 2) = (*(pixel1 + 2) + *(pixel2 + 2) + *(pixel3 + 2) + *(pixel4 + 2)) / 4;
+                }
+            }
+#pragma omp single
+            {
+                out << outFrame;
+            }
+        }
     }
     gettimeofday(&tval_after, NULL);
     timersub(&tval_after, &tval_before, &tval_result);
@@ -74,25 +96,6 @@ int main(int argc, char **argv)
     frame.release();
     outFrame.release();
     out.release();
-    cap.release();    
+    cap.release();
     return 0;
-}
-
-void sequentialScale(uchar *pixels, uchar *newPixels)
-{
-    for (int scaledCol = 0; scaledCol < newCols; scaledCol++)
-    {
-        origCol = scaledCol * 2 * channels;
-        for (int scaledRow = 0; scaledRow < newRows; scaledRow++)
-        {
-            pixel1 = pixels + origCol + scaledRow * 2 * rowLen;
-            pixel2 = pixel1 + channels;
-            pixel3 = pixel1 + rowLen;
-            pixel4 = pixel3 + channels;
-            newPixel = newPixels + scaledCol * channels + scaledRow * newRowLen;
-            *(newPixel) = (*pixel1 + *pixel2 + *pixel3 + *pixel4) / 4;
-            *(newPixel + 1) = (*(pixel1 + 1) + *(pixel2 + 1) + *(pixel3 + 1) + *(pixel4 + 1)) / 4;
-            *(newPixel + 2) = (*(pixel1 + 2) + *(pixel2 + 2) + *(pixel3 + 2) + *(pixel4 + 2)) / 4;
-        }
-    }
 }

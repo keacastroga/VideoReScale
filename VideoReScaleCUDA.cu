@@ -71,7 +71,7 @@ int main(int argc, char **argv)
     cudaSetDevice(0);
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, 0);
-    int threadsPerBlock = threadsPerBlock = _ConvertSMVer2Cores(deviceProp.major, deviceProp.minor) * 2;
+    int threadsPerBlock = _ConvertSMVer2Cores(deviceProp.major, deviceProp.minor) * 2;
     int blocksPerGrid =(newCols + threadsPerBlock - 1) / threadsPerBlock;
     printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
 
