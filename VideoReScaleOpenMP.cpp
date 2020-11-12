@@ -12,8 +12,6 @@ using namespace cv;
 
 int rows, cols, channels, rowLen, newRows, newCols, newRowLen;
 
-void openMPScale(uchar *pixels, uchar *newPixels);
-
 int main(int argc, char **argv)
 {
     if (argc != 4)
@@ -33,7 +31,6 @@ int main(int argc, char **argv)
     double factor = stod(argv[2]);
     double fps = cap.get(CAP_PROP_FPS);
     int fourcc = static_cast<int>(cap.get(CAP_PROP_FOURCC));
-
     rows = (int)cap.get(CAP_PROP_FRAME_HEIGHT);
     cols = (int)cap.get(CAP_PROP_FRAME_WIDTH);
     channels = 3;
