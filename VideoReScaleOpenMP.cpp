@@ -4,6 +4,7 @@
 #include <vector>
 #include <opencv2/opencv.hpp>
 #include <sys/time.h>
+#include <omp.h>
 
 using namespace std;
 using namespace cv;

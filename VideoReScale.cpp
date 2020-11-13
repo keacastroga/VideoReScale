@@ -8,7 +8,7 @@
 using namespace std;
 using namespace cv;
 
-int rows, cols, channels, rowLen, newRows, newCols, newRowLen, origCol;
+int rows, cols, channels, rowLen, newRows, newCols, newRowLen, origRow;
 
 unsigned char *pixel1, *pixel2, *pixel3, *pixel4, *newPixel;
 
@@ -65,7 +65,6 @@ int main(int argc, char **argv)
             break;
         sequentialScale(frame.data, newPixels);
         out << outFrame;
-
     }
     gettimeofday(&tval_after, NULL);
     timersub(&tval_after, &tval_before, &tval_result);
@@ -74,18 +73,18 @@ int main(int argc, char **argv)
     frame.release();
     outFrame.release();
     out.release();
-    cap.release();    
+    cap.release();
     return 0;
 }
 
 void sequentialScale(uchar *pixels, uchar *newPixels)
 {
-    for (int scaledCol = 0; scaledCol < newCols; scaledCol++)
+    for (int scaledRow = 0; scaledRow < newRows; scaledRow++)
     {
-        origCol = scaledCol * 2 * channels;
-        for (int scaledRow = 0; scaledRow < newRows; scaledRow++)
+        origRow = scaledRow * 2 * rowLen;
+        for (int scaledCol = 0; scaledCol < newCols; scaledCol++)
         {
-            pixel1 = pixels + origCol + scaledRow * 2 * rowLen;
+            pixel1 = pixels + scaledCol * 2 * channels + origRow;
             pixel2 = pixel1 + channels;
             pixel3 = pixel1 + rowLen;
             pixel4 = pixel3 + channels;

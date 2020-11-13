@@ -14,7 +14,7 @@ target_link_libraries( VideoReScaleOpenMP.out ${OpenCV_LIBS} )
 target_link_libraries( VideoReScaleCUDA.out ${OpenCV_LIBS} )
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(VideoReScale.out OpenMP::OpenMP_CXX)
+    target_link_libraries(VideoReScaleOpenMP.out OpenMP::OpenMP_CXX)
     target_link_libraries( VideoReScaleCUDA.out ${OpenCV_LIBS} )
 
 endif()
