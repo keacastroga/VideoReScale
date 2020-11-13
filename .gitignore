@@ -1,7 +1,6 @@
 *.out
 *.swp
 *.ninja
-*.mp4
 .ninja*
 CMakeCache.txt
 CMakeFiles

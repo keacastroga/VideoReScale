@@ -9,7 +9,7 @@
 using namespace std;
 using namespace cv;
 
-#define THREADS 8
+#define THREADS 16
 
 int rows, cols, channels, rowLen, newRows, newCols, newRowLen;
 
