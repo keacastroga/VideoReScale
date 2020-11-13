@@ -70,13 +70,14 @@ int main(int argc, char **argv)
             for (int scaledRow = 0; scaledRow < newRows; scaledRow++)
             {
                 int origRow = scaledRow * 2 * rowLen;
+                uchar *pixel1, *pixel2, *pixel3, *pixel4, *newPixel;
                 for (int scaledCol = 0; scaledCol < newCols; scaledCol++)
                 {
-                    uchar *pixel1 = frame.data + scaledCol * 2 * channels + origRow;
-                    uchar *pixel2 = pixel1 + channels;
-                    uchar *pixel3 = pixel1 + rowLen;
-                    uchar *pixel4 = pixel3 + channels;
-                    uchar *newPixel = newPixels + scaledCol * channels + scaledRow * newRowLen;
+                    pixel1 = frame.data + scaledCol * 2 * channels + origRow;
+                    pixel2 = pixel1 + channels;
+                    pixel3 = pixel1 + rowLen;
+                    pixel4 = pixel3 + channels;
+                    newPixel = newPixels + scaledCol * channels + scaledRow * newRowLen;
                     *(newPixel) = (*pixel1 + *pixel2 + *pixel3 + *pixel4) / 4;
                     *(newPixel + 1) = (*(pixel1 + 1) + *(pixel2 + 1) + *(pixel3 + 1) + *(pixel4 + 1)) / 4;
                     *(newPixel + 2) = (*(pixel1 + 2) + *(pixel2 + 2) + *(pixel3 + 2) + *(pixel4 + 2)) / 4;
