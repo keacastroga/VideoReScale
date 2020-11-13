@@ -86,18 +86,15 @@ int main(int argc, char **argv)
     Mat outFrame(newRows, newCols, CV_8UC3, h_newPixels);
     struct timeval tval_before, tval_after, tval_result;
     gettimeofday(&tval_before, NULL);
-    int i = 0;
     while (1)
     {
         cap >> frame;
         if (frame.empty())
             break;
-        cout << "Frame: " << i << "\r";
         cudaMemcpy(d_pixels, frame.data, sizeOrig, cudaMemcpyHostToDevice);
         CUDAScale<<<blocksPerGrid, threadsPerBlock>>>((uchar *)d_pixels, (uchar *)d_newPixels, newRows, newCols, rowLen, newRowLen);
         cudaMemcpy(h_newPixels, d_newPixels, sizeNew, cudaMemcpyDeviceToHost);
         out << outFrame;
-        i++;
     }
     gettimeofday(&tval_after, NULL);
     timersub(&tval_after, &tval_before, &tval_result);

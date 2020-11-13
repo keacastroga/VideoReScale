@@ -33,8 +33,8 @@ int main(int argc, char **argv)
     VideoWriter out;
     double factor = stod(argv[2]);
     double fps = cap.get(CAP_PROP_FPS);
-    int fourcc = static_cast<int>(cap.get(CAP_PROP_FOURCC));
-
+    //int fourcc = static_cast<int>(cap.get(CAP_PROP_FOURCC));
+    int fourcc = VideoWriter::fourcc('H', '2', '6', '4'); 
     rows = (int)cap.get(CAP_PROP_FRAME_HEIGHT);
     cols = (int)cap.get(CAP_PROP_FRAME_WIDTH);
     channels = 3;
