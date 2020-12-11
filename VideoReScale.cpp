@@ -42,9 +42,12 @@ int main(int argc, char **argv)
         frames = cap.get(CAP_PROP_FRAME_COUNT);
         rows = (int)cap.get(CAP_PROP_FRAME_HEIGHT);
         cols = (int)cap.get(CAP_PROP_FRAME_WIDTH);
-        MPI_Send(&frames, 1, MPI_INTEGER, j, tag, MPI_COMM_WORLD);
-        MPI_Send(&rows, 1, MPI_INTEGER, j, tag, MPI_COMM_WORLD);
-        MPI_Send(&cols, 1, MPI_INTEGER, j, tag, MPI_COMM_WORLD);
+        for (j = 1; j < size; j++)
+        {
+            MPI_Send(&frames, 1, MPI_INTEGER, j, tag, MPI_COMM_WORLD);
+            MPI_Send(&rows, 1, MPI_INTEGER, j, tag, MPI_COMM_WORLD);
+            MPI_Send(&cols, 1, MPI_INTEGER, j, tag, MPI_COMM_WORLD);
+        }
     }
     else
     {
