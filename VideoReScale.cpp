@@ -81,7 +81,7 @@ int main(int argc, char **argv)
     int i = 0;
     int sectionSize = rows / size * channels * cols;
     int newSectionSize = newRows / size * channels * newCols;
-    while (i < 100)
+    while (i < frames)
     {
         if (rank == 0)
         {
