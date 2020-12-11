@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     size_t sizeNew = sizeof(uchar) * newCols * channels * newRows;
     size_t sizeOrig = sizeof(uchar) * cols * channels * rows;
     unsigned char *newPixels = (uchar *)malloc(sizeNew);
-    unsigned char *newPixelsPart = (uchar *)malloc(sizeNew);
+    //unsigned char *newPixelsPart = (uchar *)malloc(sizeNew);
     unsigned char *pixels = (uchar *)malloc(sizeOrig);
 
     VideoWriter out;
@@ -134,6 +134,7 @@ int main(int argc, char **argv)
     {
         free(pixels);
     }
+    free(newPixels);
     cap.release();
     MPI_Finalize();
     return 0;
