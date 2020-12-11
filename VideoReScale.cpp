@@ -4,6 +4,7 @@
 #include <vector>
 #include <opencv2/opencv.hpp>
 #include <sys/time.h>
+#include <mpi.h>
 
 using namespace std;
 using namespace cv;
@@ -17,63 +18,74 @@ void openMPScale(uchar *pixels, uchar *newPixels);
 
 int main(int argc, char **argv)
 {
-    if (argc != 4)
+    int rank, size;
+    MPI_Init( &argc, &argv );
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank == 0)
     {
-        printf("usage: VideoReScale.out <Video_Path> <scale factor> <Output_path>\n");
-        return -1;
+        printf("Yes Program from process %d of %d\n", rank+1, size );
+        if (argc != 4)
+        {
+            printf("usage: VideoReScale.out <Video_Path> <scale factor> <Output_path>\n");
+            return -1;
+        }
+
+        VideoCapture cap(argv[1]);
+        if (!cap.isOpened())
+        {
+            cout << "Error opening video stream or file" << endl;
+            return -1;
+        }
+
+        VideoWriter out;
+        double factor = stod(argv[2]);
+        double fps = cap.get(CAP_PROP_FPS);
+        //int fourcc = static_cast<int>(cap.get(CAP_PROP_FOURCC));
+        int fourcc = VideoWriter::fourcc('H', '2', '6', '4');
+        rows = (int)cap.get(CAP_PROP_FRAME_HEIGHT);
+        cols = (int)cap.get(CAP_PROP_FRAME_WIDTH);
+        channels = 3;
+        rowLen = channels * cols;
+        newRows = rows * factor;
+        newCols = cols * factor;
+        newRowLen = channels * newCols;
+
+        Size S = Size(newCols, newRows);
+
+        unsigned char *newPixels = (uchar *)malloc(sizeof(uchar) * newCols * channels * newRows);
+
+        out.open(argv[3], fourcc, fps, S);
+        if (!out.isOpened())
+        {
+            cout << "Could not open the output video for write: " << endl;
+            return -1;
+        }
+
+        Mat frame;
+        Mat outFrame(newRows, newCols, CV_8UC3, newPixels);
+        struct timeval tval_before, tval_after, tval_result;
+        gettimeofday(&tval_before, NULL);
+        while (1)
+        {
+            cap >> frame;
+            if (frame.empty())
+                break;
+            sequentialScale(frame.data, newPixels);
+            out << outFrame;
+        }
+        gettimeofday(&tval_after, NULL);
+        timersub(&tval_after, &tval_before, &tval_result);
+        printf("Time elapsed: %ld.%06ld\n", (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
+        free(newPixels);
+        frame.release();
+        outFrame.release();
+        out.release();
+        cap.release();
+    }else{
+        printf("No Program from process %d of %d\n", rank+1, size );
     }
-
-    VideoCapture cap(argv[1]);
-    if (!cap.isOpened())
-    {
-        cout << "Error opening video stream or file" << endl;
-        return -1;
-    }
-
-    VideoWriter out;
-    double factor = stod(argv[2]);
-    double fps = cap.get(CAP_PROP_FPS);
-    //int fourcc = static_cast<int>(cap.get(CAP_PROP_FOURCC));
-    int fourcc = VideoWriter::fourcc('H', '2', '6', '4'); 
-    rows = (int)cap.get(CAP_PROP_FRAME_HEIGHT);
-    cols = (int)cap.get(CAP_PROP_FRAME_WIDTH);
-    channels = 3;
-    rowLen = channels * cols;
-    newRows = rows * factor;
-    newCols = cols * factor;
-    newRowLen = channels * newCols;
-
-    Size S = Size(newCols, newRows);
-
-    unsigned char *newPixels = (uchar *)malloc(sizeof(uchar) * newCols * channels * newRows);
-
-    out.open(argv[3], fourcc, fps, S);
-    if (!out.isOpened())
-    {
-        cout << "Could not open the output video for write: " << endl;
-        return -1;
-    }
-
-    Mat frame;
-    Mat outFrame(newRows, newCols, CV_8UC3, newPixels);
-    struct timeval tval_before, tval_after, tval_result;
-    gettimeofday(&tval_before, NULL);
-    while (1)
-    {
-        cap >> frame;
-        if (frame.empty())
-            break;
-        sequentialScale(frame.data, newPixels);
-        out << outFrame;
-    }
-    gettimeofday(&tval_after, NULL);
-    timersub(&tval_after, &tval_before, &tval_result);
-    printf("Time elapsed: %ld.%06ld\n", (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
-    free(newPixels);
-    frame.release();
-    outFrame.release();
-    out.release();
-    cap.release();
+    MPI_Finalize();
     return 0;
 }
 
