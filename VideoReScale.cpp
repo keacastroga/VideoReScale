@@ -19,29 +19,48 @@ int main(int argc, char **argv)
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    int j, tag = 1;
+    MPI_Status status;
     if (argc != 4)
     {
         printf("usage: VideoReScale.out <Video_Path> <scale factor> <Output_path>\n");
         return -1;
     }
 
-    VideoCapture cap(argv[1]);
-    if (!cap.isOpened())
+    VideoCapture cap;
+    double fps;
+    int frames;
+    if (rank == 0)
     {
-        cout << "Error opening video stream or file" << endl;
-        return -1;
+        cap = VideoCapture(argv[1]);
+        if (!cap.isOpened())
+        {
+            cout << "Error opening video stream or file" << endl;
+            return -1;
+        }
+        fps = cap.get(CAP_PROP_FPS);
+        frames = cap.get(CAP_PROP_FRAME_COUNT);
+        rows = (int)cap.get(CAP_PROP_FRAME_HEIGHT);
+        cols = (int)cap.get(CAP_PROP_FRAME_WIDTH);
+        for (j = 1; j < size; j++)
+        {
+            MPI_Send(&frames, 1, MPI_INTEGER, j, tag, MPI_COMM_WORLD);
+            MPI_Send(&rows, 1, MPI_INTEGER, j, tag, MPI_COMM_WORLD);
+            MPI_Send(&cols, 1, MPI_INTEGER, j, tag, MPI_COMM_WORLD);
+        }
+    }
+    else
+    {
+        MPI_Recv(&frames, 1, MPI_INTEGER, 0, tag, MPI_COMM_WORLD, &status);
+        MPI_Recv(&rows, 1, MPI_INTEGER, 0, tag, MPI_COMM_WORLD, &status);
+        MPI_Recv(&cols, 1, MPI_INTEGER, 0, tag, MPI_COMM_WORLD, &status);
     }
 
-    VideoWriter out;
     Mat frame;
     Mat outFrame;
     double factor = stod(argv[2]);
-    double fps = cap.get(CAP_PROP_FPS);
-    int frames = cap.get(CAP_PROP_FRAME_COUNT);
 
     int fourcc = VideoWriter::fourcc('H', '2', '6', '4');
-    rows = (int)cap.get(CAP_PROP_FRAME_HEIGHT);
-    cols = (int)cap.get(CAP_PROP_FRAME_WIDTH);
     channels = 3;
     rowLen = channels * cols;
     newRows = rows * factor;
@@ -56,6 +75,7 @@ int main(int argc, char **argv)
     unsigned char *newPixelsPart = (uchar *)malloc(sizeNew);
     unsigned char *pixels = (uchar *)malloc(sizeOrig);
 
+    VideoWriter out;
     if (rank == 0)
     {
         out.open(argv[3], fourcc, fps, S);
@@ -69,8 +89,6 @@ int main(int argc, char **argv)
     struct timeval tval_before, tval_after, tval_result;
     gettimeofday(&tval_before, NULL);
     int i = 0;
-    int j, tag = 1;
-    MPI_Status status;
     while (i < frames)
     {
         if (rank == 0)
@@ -93,11 +111,11 @@ int main(int argc, char **argv)
         MPI_Reduce(newPixelsPart, newPixels, sizeNew, MPI_UNSIGNED_CHAR, MPI_SUM, 0, MPI_COMM_WORLD);
         if (rank == 0)
             out << outFrame;
-        i++;        
+        i++;
     }
     gettimeofday(&tval_after, NULL);
     timersub(&tval_after, &tval_before, &tval_result);
-    
+
     if (rank == 0)
     {
         printf("Time elapsed: %ld.%06ld\n", (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
