@@ -42,10 +42,19 @@ int main(int argc, char **argv)
         frames = cap.get(CAP_PROP_FRAME_COUNT);
         rows = (int)cap.get(CAP_PROP_FRAME_HEIGHT);
         cols = (int)cap.get(CAP_PROP_FRAME_WIDTH);
+        for (j = 1; j < size; j++)
+        {
+            MPI_Send(&frames, 1, MPI_INTEGER, j, tag, MPI_COMM_WORLD);
+            MPI_Send(&rows, 1, MPI_INTEGER, j, tag, MPI_COMM_WORLD);
+            MPI_Send(&cols, 1, MPI_INTEGER, j, tag, MPI_COMM_WORLD);
+        }
     }
-    MPI_Bcast(&frames, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&rows, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&cols, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
+    else
+    {
+        MPI_Recv(&frames, 1, MPI_INTEGER, 0, tag, MPI_COMM_WORLD, &status);
+        MPI_Recv(&rows, 1, MPI_INTEGER, 0, tag, MPI_COMM_WORLD, &status);
+        MPI_Recv(&cols, 1, MPI_INTEGER, 0, tag, MPI_COMM_WORLD, &status);
+    }
     Mat frame;
     Mat outFrame;
     double factor = stod(argv[2]);
