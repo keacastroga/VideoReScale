@@ -89,6 +89,7 @@ int main(int argc, char **argv)
     struct timeval tval_before, tval_after, tval_result;
     gettimeofday(&tval_before, NULL);
     int i = 0;
+    int sectionSize = rows/size*channels*cols;
     while (i < frames)
     {
         if (rank == 0)
@@ -100,12 +101,12 @@ int main(int argc, char **argv)
             }
             pixels = frame.data;
             for (j = 1; j < size; j++)
-                MPI_Send(pixels, sizeOrig, MPI_UNSIGNED_CHAR, j, tag, MPI_COMM_WORLD);
+                MPI_Send(pixels+(j*sectionSize), (sectionSize), MPI_UNSIGNED_CHAR, j, tag, MPI_COMM_WORLD);
             cout << "frame: " << i << "/" << frames << "\r";
         }
         else
         {
-            MPI_Recv(pixels, sizeOrig, MPI_UNSIGNED_CHAR, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(pixels+(rank*sectionSize), (sectionSize), MPI_UNSIGNED_CHAR, 0, tag, MPI_COMM_WORLD, &status);
         }
         sequentialScale(pixels, newPixelsPart, rank, size);
         MPI_Reduce(newPixelsPart, newPixels, sizeNew, MPI_UNSIGNED_CHAR, MPI_SUM, 0, MPI_COMM_WORLD);
