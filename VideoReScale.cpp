@@ -42,20 +42,10 @@ int main(int argc, char **argv)
         frames = cap.get(CAP_PROP_FRAME_COUNT);
         rows = (int)cap.get(CAP_PROP_FRAME_HEIGHT);
         cols = (int)cap.get(CAP_PROP_FRAME_WIDTH);
-        for (j = 1; j < size; j++)
-        {
-            MPI_Send(&frames, 1, MPI_INTEGER, j, tag, MPI_COMM_WORLD);
-            MPI_Send(&rows, 1, MPI_INTEGER, j, tag, MPI_COMM_WORLD);
-            MPI_Send(&cols, 1, MPI_INTEGER, j, tag, MPI_COMM_WORLD);
-        }
     }
-    else
-    {
-        MPI_Recv(&frames, 1, MPI_INTEGER, 0, tag, MPI_COMM_WORLD, &status);
-        MPI_Recv(&rows, 1, MPI_INTEGER, 0, tag, MPI_COMM_WORLD, &status);
-        MPI_Recv(&cols, 1, MPI_INTEGER, 0, tag, MPI_COMM_WORLD, &status);
-    }
-
+    MPI_Bcast(&frames, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&rows, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&cols, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
     Mat frame;
     Mat outFrame;
     double factor = stod(argv[2]);
@@ -89,7 +79,9 @@ int main(int argc, char **argv)
     struct timeval tval_before, tval_after, tval_result;
     gettimeofday(&tval_before, NULL);
     int i = 0;
-    while (i < frames)
+    int sectionSize = rows / size * channels * cols;
+    int newSectionSize = newRows / size * channels * newCols;
+    while (i < 100)
     {
         if (rank == 0)
         {
@@ -100,15 +92,30 @@ int main(int argc, char **argv)
             }
             pixels = frame.data;
             for (j = 1; j < size; j++)
-                MPI_Send(pixels, sizeOrig, MPI_UNSIGNED_CHAR, j, tag, MPI_COMM_WORLD);
+            {
+                MPI_Send(pixels + (j * sectionSize), (sectionSize), MPI_UNSIGNED_CHAR, j, tag, MPI_COMM_WORLD);
+            }
             cout << "frame: " << i << "/" << frames << "\r";
         }
         else
         {
-            MPI_Recv(pixels, sizeOrig, MPI_UNSIGNED_CHAR, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(pixels + (rank * sectionSize), (sectionSize), MPI_UNSIGNED_CHAR, 0, tag, MPI_COMM_WORLD, &status);
         }
-        sequentialScale(pixels, newPixelsPart, rank, size);
-        MPI_Reduce(newPixelsPart, newPixels, sizeNew, MPI_UNSIGNED_CHAR, MPI_SUM, 0, MPI_COMM_WORLD);
+
+        sequentialScale(pixels, newPixels, rank, size);
+        if (rank != 0)
+        {
+            MPI_Send(newPixels + (rank * newSectionSize), newSectionSize, MPI_UNSIGNED_CHAR, 0, tag, MPI_COMM_WORLD);
+        }
+        else
+        {
+            for (j = 1; j < size; j++)
+            {
+                MPI_Recv(newPixels + (j * newSectionSize), newSectionSize, MPI_UNSIGNED_CHAR, j, tag, MPI_COMM_WORLD, &status);
+            }
+        }
+
+        //MPI_Reduce(newPixelsPart, newPixels, sizeNew, MPI_UNSIGNED_CHAR, MPI_SUM, 0, MPI_COMM_WORLD);
         if (rank == 0)
             out << outFrame;
         i++;
