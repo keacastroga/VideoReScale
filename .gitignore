@@ -2,6 +2,8 @@
 *.swp
 *.ninja
 .ninja*
+*.mkv
+VideoReScale
 CMakeCache.txt
 CMakeFiles
 cmake_install.cmake
